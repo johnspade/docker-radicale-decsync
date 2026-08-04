@@ -1,3 +1,11 @@
+# docker-radicale-decsync
+
+Fork of [tomsquest/docker-radicale](https://github.com/tomsquest/docker-radicale) with [DecSync](https://github.com/niccokunzmann/radicale_storage_decsync) storage plugin support, based on work from [frisodubach/docker-radicale-decsync](https://github.com/frisodubach/docker-radicale-decsync). Uses Minideb instead of Alpine because libdecsync requires glibc.
+
+---
+
+## Original README
+
 <p align="center">
 <img src="logo.png" alt="Logo" />
 </p>
