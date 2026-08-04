@@ -4,7 +4,7 @@ ARG COMMIT_ID
 ENV COMMIT_ID ${COMMIT_ID}
 
 ARG VERSION
-ENV VERSION ${VERSION:-3.1.8}
+ENV VERSION ${VERSION:-3.7.7}
 
 ARG BUILD_UID
 ENV BUILD_UID ${BUILD_UID:-2999}
@@ -39,8 +39,8 @@ RUN install_packages gcc \
         libc-dev-bin
 
 RUN python3 -m pip install --upgrade pip \
-    && python3 -m pip install radicale==$VERSION passlib[becrypt] \
-    && pip3 install radicale_storage_decsync
+    && python3 -m pip install radicale==$VERSION passlib[bcrypt] \
+    && pip3 install git+https://github.com/DiagonalArg/Radicale-DecSync.git@b4518d72c5da6ff57d9a3946a54b54c9da61ca13
 RUN mkdir -p /data/decsync
 
 RUN apt-get remove --purge -y gcc python3-dev libffi-dev libc-dev-bin gcc-10 cpp-10 libgcc-10-dev linux-libc-dev
