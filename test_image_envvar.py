@@ -16,9 +16,9 @@ def host():
                 "-d",
                 "--init",
                 "-e",
-                "RADICALE_CONFIG_WEB_TYPE=internal",
+                "RADICALE_CONFIG_WEB_TYPE=none",
                 "-e",
-                "RADICALE_CONFIG_FOO_BAR=qix",
+                "RADICALE_CONFIG_AUTH_DELAY=5",
                 "radicale-under-test",
             ]
         )
@@ -38,5 +38,5 @@ def test_config(host):
     parser = configparser.ConfigParser()
     parser.read_string(config_content)
 
-    assert parser.get("web", "type") == "internal"
-    assert parser.get("foo", "bar") == "qix"
+    assert parser.get("web", "type") == "none"
+    assert parser.get("auth", "delay") == "5"
