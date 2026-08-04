@@ -4,7 +4,7 @@ ARG COMMIT_ID
 ENV COMMIT_ID=${COMMIT_ID}
 
 ARG VERSION
-ENV VERSION=${VERSION:-3.7.6}
+ENV VERSION=${VERSION:-3.7.7}
 
 ARG BUILD_UID
 ENV BUILD_UID=${BUILD_UID:-2999}
@@ -21,7 +21,7 @@ LABEL maintainer="Thomas Queste <tom@tomsquest.com>" \
       org.label-schema.url="https://github.com/Kozea/Radicale" \
       org.label-schema.version=$VERSION \
       org.label-schema.vcs-ref=$COMMIT_ID \
-      org.label-schema.vcs-url="https://github.com/johnspade/docker-radicale" \
+      org.label-schema.vcs-url="https://github.com/johnspade/docker-radicale-decsync" \
       org.label-schema.schema-version="1.0"
 
 RUN install_packages \
@@ -40,7 +40,8 @@ RUN install_packages \
         libffi-dev \
         libc-dev-bin \
     && python3 -m venv /venv \
-    && /venv/bin/pip install --no-cache-dir radicale==$VERSION passlib[bcrypt] radicale_storage_decsync \
+    && /venv/bin/pip install --no-cache-dir radicale==$VERSION passlib[bcrypt] \
+    && /venv/bin/pip install --no-cache-dir git+https://github.com/DiagonalArg/Radicale-DecSync.git@b4518d72c5da6ff57d9a3946a54b54c9da61ca13 \
     && apt-get remove --purge -y gcc python3-dev libffi-dev libc-dev-bin \
     && apt-get -y autoremove \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists \
