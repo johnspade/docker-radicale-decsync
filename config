@@ -17,9 +17,11 @@ type = none
 
 [storage]
 
-# Folder for storing local collections, created if not present
-#filesystem_folder = /var/lib/radicale/collections
+# Storage backend
+# Value: multifilesystem | multifilesystem_nolock
+type = radicale_storage_decsync
 filesystem_folder = /data/collections
+decsync_dir = /data/decsync
 
 [headers]
 

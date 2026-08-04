@@ -44,7 +44,7 @@ fi
 
 # Run radicale as the "radicale" user or any other command if provided
 if [ "$(id -u)" = "0" ] && [ "$1" = "/venv/bin/radicale" ]; then
-    exec su-exec radicale "$@"
+    exec gosu radicale "$@"
 else
     exec "$@"
 fi

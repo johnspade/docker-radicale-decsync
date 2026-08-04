@@ -1,4 +1,4 @@
-FROM alpine:3
+FROM bitnami/minideb:bullseye
 
 ARG COMMIT_ID
 ENV COMMIT_ID=${COMMIT_ID}
@@ -17,37 +17,38 @@ ENV TAKE_FILE_OWNERSHIP=${TAKE_FILE_OWNERSHIP:-true}
 
 LABEL maintainer="Thomas Queste <tom@tomsquest.com>" \
       org.label-schema.name="Radicale Docker Image" \
-      org.label-schema.description="Enhanced Docker image for Radicale, the CalDAV/CardDAV server" \
+      org.label-schema.description="Enhanced Docker image for Radicale, the CalDAV/CardDAV server, with DecSync plugin" \
       org.label-schema.url="https://github.com/Kozea/Radicale" \
       org.label-schema.version=$VERSION \
       org.label-schema.vcs-ref=$COMMIT_ID \
-      org.label-schema.vcs-url="https://github.com/tomsquest/docker-radicale" \
+      org.label-schema.vcs-url="https://github.com/johnspade/docker-radicale" \
       org.label-schema.schema-version="1.0"
 
-RUN apk add --no-cache --virtual=build-dependencies \
-        gcc \
-        musl-dev \
-        libffi-dev \
-        python3-dev \
-    && apk add --no-cache \
+RUN install_packages \
         curl \
         git \
-        openssh \
-        shadow \
-        su-exec \
-        tzdata \
+        openssh-client \
+        gosu \
         wget \
-        python3 \
-        py3-pip \
-    && python -m venv /venv \
-    && /venv/bin/pip install --no-cache-dir radicale==$VERSION passlib[bcrypt] argon2-cffi pytz ldap3 \
-    && apk del --purge build-dependencies \
-    && addgroup -g $BUILD_GID radicale \
-    && adduser -D -s /bin/false -H -u $BUILD_UID -G radicale radicale \
-    && mkdir -p /config /data \
+        python3-minimal \
+        python3-venv \
+        python3-pip \
+        passwd \
+    && install_packages \
+        gcc \
+        python3-dev \
+        libffi-dev \
+        libc-dev-bin \
+    && python3 -m venv /venv \
+    && /venv/bin/pip install --no-cache-dir radicale==$VERSION passlib[bcrypt] radicale_storage_decsync \
+    && apt-get remove --purge -y gcc python3-dev libffi-dev libc-dev-bin \
+    && apt-get -y autoremove \
+    && rm -rf /var/cache/apt/archives /var/lib/apt/lists \
+    && addgroup --gid $BUILD_GID radicale \
+    && adduser --uid $BUILD_UID --disabled-password --disabled-login --shell /bin/false --no-create-home --ingroup radicale radicale \
+    && mkdir -p /config /data /data/decsync \
     && chmod -R 770 /data \
-    && chown -R radicale:radicale /data \
-    && rm -fr /root/.cache
+    && chown -R radicale:radicale /data
 
 HEALTHCHECK --interval=30s --retries=3 CMD curl --fail http://localhost:5232 || exit 1
 VOLUME /config /data
