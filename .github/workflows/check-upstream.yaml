@@ -1,0 +1,53 @@
+name: check_upstream
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get current version
+        id: current
+        run: |
+          version=$(grep -oP "VERSION:-\K[0-9.]+" Dockerfile)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Get upstream latest version
+        id: upstream
+        run: |
+          version=$(curl -s https://pypi.org/pypi/Radicale/json | jq -r '.info.version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Create update PR
+        if: steps.current.outputs.version != steps.upstream.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT: ${{ steps.current.outputs.version }}
+          UPSTREAM: ${{ steps.upstream.outputs.version }}
+        run: |
+          branch="update-radicale-${UPSTREAM}"
+          if gh pr list --head "$branch" --json number | jq -e 'length > 0' > /dev/null; then
+            echo "PR already exists for $branch"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          sed -i "s/VERSION:-${CURRENT}/VERSION:-${UPSTREAM}/" Dockerfile
+          git add Dockerfile
+          git commit -m "Update Radicale to ${UPSTREAM}"
+          git push -u origin "$branch"
+          gh pr create \
+            --title "Update Radicale to ${UPSTREAM}" \
+            --body "$(cat <<EOF
+          Upstream Radicale released version ${UPSTREAM} (current: ${CURRENT}).
+
+          **Review checklist:**
+          - [ ] CI passes (image builds, tests green)
+          - [ ] DecSync plugin still compatible
+          - [ ] Check [Radicale changelog](https://github.com/Kozea/Radicale/blob/master/CHANGELOG.md) for breaking changes
+          EOF
+          )"
