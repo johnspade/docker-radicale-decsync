@@ -62,19 +62,29 @@ jobs:
             echo "Open upstream issue already exists, skipping"
             exit 0
           fi
-          # Find last closed upstream issue to get the comparison base
-          last_sha=$(gh issue list --label "upstream" --state closed --json body --jq '.[0].body' | grep -oP '(?<=compare/)[a-f0-9]+(?=\.\.\.master)' || true)
           upstream_sha=$(curl -s https://api.github.com/repos/tomsquest/docker-radicale/commits/master | jq -r '.sha')
-          compare_url="https://github.com/tomsquest/docker-radicale/compare/${last_sha:+${last_sha}...}master"
+          # Find last checked SHA from most recent closed upstream issue
+          last_sha=$(gh issue list --label "upstream" --state closed --limit 1 --json body --jq '.[0].body' | grep -oP '(?<=<!-- upstream-sha: )[a-f0-9]+' || true)
+          if [ "$upstream_sha" = "$last_sha" ]; then
+            echo "No new upstream commits since last check"
+            exit 0
+          fi
+          if [ -n "$last_sha" ]; then
+            changes_url="https://github.com/tomsquest/docker-radicale/compare/${last_sha}...${upstream_sha}"
+          else
+            changes_url="https://github.com/tomsquest/docker-radicale/commits/master"
+          fi
           gh issue create \
             --title "Upstream docker-radicale has new changes" \
             --label "upstream" \
             --body "$(cat <<EOF
           New commits detected in [tomsquest/docker-radicale](https://github.com/tomsquest/docker-radicale).
 
-          **Changes:** ${compare_url}
+          **Changes:** ${changes_url}
 
           Review and cherry-pick anything relevant (entrypoint, config, tests).
           Close this issue when done.
+
+          <!-- upstream-sha: ${upstream_sha} -->
           EOF
           )"
