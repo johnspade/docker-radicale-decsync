@@ -9,6 +9,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - name: Get current version
@@ -51,3 +52,46 @@ jobs:
           - [ ] Check [Radicale changelog](https://github.com/Kozea/Radicale/blob/master/CHANGELOG.md) for breaking changes
           EOF
           )"
+      - name: Check for upstream repo changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          last_checked_file=".github/upstream-last-checked-sha"
+          upstream_sha=$(curl -s https://api.github.com/repos/tomsquest/docker-radicale/commits/master | jq -r '.sha')
+          if [ -f "$last_checked_file" ]; then
+            last_sha=$(cat "$last_checked_file")
+          else
+            last_sha=""
+          fi
+          if [ "$upstream_sha" = "$last_sha" ]; then
+            echo "No new upstream commits"
+            exit 0
+          fi
+          # Check if an open issue already exists
+          existing=$(gh issue list --label "upstream" --state open --json number | jq 'length')
+          if [ "$existing" -gt "0" ]; then
+            echo "Open upstream issue already exists, skipping"
+          else
+            compare_url="https://github.com/tomsquest/docker-radicale/compare/${last_sha:+${last_sha}...master}"
+            commits_url="https://github.com/tomsquest/docker-radicale/commits/master"
+            gh issue create \
+              --title "Upstream docker-radicale has new changes" \
+              --label "upstream" \
+              --body "$(cat <<EOF
+          New commits detected in [tomsquest/docker-radicale](https://github.com/tomsquest/docker-radicale).
+
+          ${last_sha:+**Diff:** ${compare_url}}
+          ${last_sha:-**Commits:** ${commits_url}}
+
+          Review and cherry-pick anything relevant (entrypoint, config, tests).
+          Close this issue when done.
+          EOF
+          )"
+          fi
+          # Update last checked SHA
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "$upstream_sha" > "$last_checked_file"
+          git add "$last_checked_file"
+          git commit -m "Update upstream last checked SHA"
+          git push
