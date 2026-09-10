@@ -1,4 +1,4 @@
-FROM bitnami/minideb:bullseye
+FROM bitnami/minideb:bookworm
 
 ARG COMMIT_ID
 ENV COMMIT_ID=${COMMIT_ID}
