@@ -38,7 +38,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
           sed -i "s/VERSION:-${CURRENT}/VERSION:-${UPSTREAM}/" Dockerfile
-          git add Dockerfile
+          sed -i "s/\"${CURRENT}\"/\"${UPSTREAM}\"/" test_image_prod.py
+          git add Dockerfile test_image_prod.py
           git commit -m "Update Radicale to ${UPSTREAM}"
           git push -u origin "$branch"
           gh pr create \
