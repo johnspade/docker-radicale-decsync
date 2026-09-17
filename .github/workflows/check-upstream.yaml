@@ -22,8 +22,19 @@ jobs:
         run: |
           version=$(curl -s https://pypi.org/pypi/Radicale/json | jq -r '.info.version')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Create update PR
+      - name: Check for downgrade
         if: steps.current.outputs.version != steps.upstream.outputs.version
+        id: check
+        env:
+          CURRENT: ${{ steps.current.outputs.version }}
+          UPSTREAM: ${{ steps.upstream.outputs.version }}
+        run: |
+          if [ "$(printf '%s\n%s\n' "$CURRENT" "$UPSTREAM" | sort -V | tail -1)" != "$UPSTREAM" ]; then
+            echo "::error::Radicale $UPSTREAM is older than $CURRENT, skipping."
+            exit 1
+          fi
+      - name: Create update PR
+        if: steps.current.outputs.version != steps.upstream.outputs.version && steps.check.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CURRENT: ${{ steps.current.outputs.version }}
