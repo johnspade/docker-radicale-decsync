@@ -62,6 +62,32 @@ never more than one of these in flight.
    the next scheduled run won't open a new drift issue while one is open, and
    closing it is the only way to move the baseline forward.
 
+## 3. Tagging a release → auto-published versioned image
+
+`tag_release.yaml` runs on every push to `master`. It reads `VERSION` from the
+`Dockerfile` and, if no `${VERSION}.0` tag exists yet, creates and pushes one, then
+creates a matching GitHub Release (`gh release create ... --generate-notes`). Pushing
+that tag is what triggers `release.yaml`, which actually builds and publishes the
+versioned image to ghcr.io — `tag_release.yaml` itself never builds anything.
+
+This only fires when `VERSION` has moved to something never tagged before. It does not
+tag non-version-bump changes (entrypoint fixes, plugin updates, docs) — those stay
+untagged unless you tag them by hand, same as before this workflow existed. Radicale
+versions can have multiple build-number tags (`3.0.6.0`, `3.0.6.1`, ...) for exactly
+those untagged-by-default changes; deciding when one deserves a new build tag is a
+manual judgment call this workflow deliberately doesn't make.
+
+**Important:** the job pushes the tag using a `RELEASE_TOKEN` PAT secret, not the
+default `GITHUB_TOKEN`. GitHub Actions blocks the default token from triggering further
+workflow runs (anti-recursion guard) — if this job used `GITHUB_TOKEN`, the tag would
+get created but `release.yaml` would never fire, since `release.yaml` only triggers on
+a tag push and has no `workflow_dispatch` fallback. If `tag_release.yaml` starts
+failing with auth errors, check whether `RELEASE_TOKEN` is still a valid, unexpired
+fine-grained PAT with `contents: write` on this repo.
+
+So after merging a version-bump PR (see §1), nothing further is needed to publish the
+versioned image — it happens automatically on the merge-triggered push to `master`.
+
 ## General notes for agents working in this repo
 
 - Don't hand-edit the version-bump or drift-tracking logic lightly — both PRs/issues are
@@ -73,6 +99,7 @@ never more than one of these in flight.
 - Tests: `uv run pytest` (pre-commit also runs `ruff check --fix`, `ruff format`, and
   pytest on Python files — see `.pre-commit-config.yaml`).
 - `build.yaml` runs on PRs (test + multi-arch build, no push). `push_latest.yaml` runs on
-  push to `master` (build + push `:latest`). `release.yaml` runs on tag push (build +
-  push `:<tag>` and `:latest`). Don't add a manual version bump to any of these — version
-  is driven solely by `Dockerfile`'s `VERSION` build arg and git tags.
+  push to `master` (build + push `:latest`). `tag_release.yaml` also runs on push to
+  `master` (auto-tags new Radicale versions, see §3). `release.yaml` runs on tag push
+  (build + push `:<tag>` and `:latest`). Don't add a manual version bump to any of
+  these — version is driven solely by `Dockerfile`'s `VERSION` build arg and git tags.
