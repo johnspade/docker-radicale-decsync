@@ -41,7 +41,7 @@ RUN install_packages \
         libc-dev-bin \
     && python3 -m venv /venv \
     && /venv/bin/pip install --no-cache-dir radicale==$VERSION passlib[bcrypt] \
-    && /venv/bin/pip install --no-cache-dir git+https://github.com/DiagonalArg/Radicale-DecSync.git@b4518d72c5da6ff57d9a3946a54b54c9da61ca13 \
+    && /venv/bin/pip install --no-cache-dir git+https://github.com/johnspade/Radicale-DecSync.git@4b6a005daddbe598035a1ff4609257a4d304e931 \
     && apt-get remove --purge -y gcc python3-dev libffi-dev libc-dev-bin \
     && apt-get -y autoremove \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists \
